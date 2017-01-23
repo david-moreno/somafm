@@ -169,8 +169,10 @@ sub list {
 
 	print "* Available stations:\n\n";
 	foreach my $f (@files) {
+		my $path = STATION_DIR ."/$f";
+		my $desc = `grep 'Title1' $path |cut -d':' -f3`;
 		my ($s) = $f =~ /(.*)\..*/;
-		print "  $s\n";
+		print "  $s --$desc";
 	}
 	print "\n";
 }
