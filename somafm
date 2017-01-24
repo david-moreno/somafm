@@ -35,16 +35,27 @@ use constant {
 	ERROR_LIST => 1,
 	ERROR_STATIONS => 2,
 	ERROR_GETLIST => 3,
-	ERROR_UNKNOWN => 4
+	ERROR_UNKNOWN => 4,
+
+	VERSION => "1.2"
 };
 
-#Globals
+#---------------------------------------
+# Globals
+#---------------------------------------
 our $program_name = fileparse($0);
 
 our $arg = {
 	help => 0,
 	update => 0,
-	list => 0
+	list => 0,
+	version => 0
+};
+
+our $stat = {
+	name => undef,
+	desc => undef,
+	pls => undef
 };
 
 our $mplayer = {
@@ -58,9 +69,11 @@ our $mplayer = {
 sub help {
 	my $msg = "$program_name - Plays somafm stations using mplayer\n".
 	"Usage: $program_name [OPTION] STATION\n\n".
-	"  -u, --update   Downloads the station list\n".
-	"  -l, --list     Displays the available stations\n".
-	"  -h, --help     Shows this message\n\n";
+	"  -u, --update    Downloads the station list\n".
+	"  -l, --list      Displays the available stations\n".
+	"  -h, --help      Shows this message\n".
+	"  -v, --version   Shows program version".
+	"\nNot sure what to listen? Try 'random' as STATION\n";
 
 	print "$msg";
 }
@@ -106,6 +119,35 @@ sub get_dir {
 	}
 
 	return @res;
+}
+
+# Obtains the name and the description of a given
+# station playlist
+sub get_station_data {
+	my $pls = $stat->{pls};
+	my ($name) = $pls =~ /.*\/(.*)/;
+	($name) = $name =~ /(.*)\.[^.]+$/;
+	$stat->{name} = $name;
+	$stat->{desc} = `grep 'Title1' $pls |cut -d':' -f3`;
+}
+
+# Returns a playlist
+sub get_pls {
+	my ($random) = shift;
+	my @list = get_dir(STATION_DIR);
+
+	if ($random) {
+		$stat->{pls} = STATION_DIR ."/". $list[rand(@list)];
+		goto PLS_OK;
+	}
+
+	my $station = $ARGV[0] .".pls";
+	if (not grep(/$station/, @list)) { return 0; }
+
+	$stat->{pls} = STATION_DIR ."/$station";
+PLS_OK:
+	get_station_data();
+	return 1;
 }
 
 # Creates the station storing directory
@@ -187,7 +229,8 @@ sub arguments {
 	GetOptions(
 		'help+' => \$arg->{help},
 		'update+' => \$arg->{update},
-		'list+' => \$arg->{list}
+		'list+' => \$arg->{list},
+		'version' => \$arg->{version}
 	);
 
 	if ($arg->{help}) {
@@ -202,6 +245,11 @@ sub arguments {
 
 	if ($arg->{list}) {
 		list();
+		exit(ERROR_OK);
+	}
+
+	if ($arg->{version}) {
+		print "$program_name, version ". VERSION ."\n";
 		exit(ERROR_OK);
 	}
 }
@@ -248,7 +296,7 @@ sub print_title {
 sub sigint {
 	kill('INT', $mplayer->{pid});
 	wait();
-	print "\b\b  \n* Stop: $ARGV[0]\n";
+	print "\b\b  \n* Stop: $stat->{name}\n";
 	exit;
 }
 
@@ -265,23 +313,23 @@ if (not -d STATION_DIR or empty_dir(STATION_DIR)) {
 	exit(ERROR_STATIONS);
 }
 
-my $station = $ARGV[0] .".pls";
-my @list = get_dir(STATION_DIR);
-
-if (not grep(/$station/, @list)) {
+get_pls($ARGV[0] eq "random");
+if (not $stat->{pls}) {
 	print "ERROR: Unknown station\n";
 	exit(ERROR_UNKNOWN);
 }
 
-my $pls = STATION_DIR ."/$station";
-print "* Play: $ARGV[0]\n  Press 'CTRL+C' to exit\n\n";
-
-my $cmd = BIN ." -playlist $pls";
+my $cmd = BIN ." -playlist $stat->{pls}";
 spawn($cmd);
 $SIG{'INT'} = \&sigint;
 $SIG{'QUIT'} = \&sigint;
 $SIG{'KILL'} = \&sigint;
 $| = 1;
+
+my $banner = "* Play: $stat->{name}\n".
+" $stat->{desc}".
+"  Press 'CTRL+C' to exit\n\n";
+print "$banner";
 
 while (1) {
 	if (not child_alive()) {
