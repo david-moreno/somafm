@@ -260,14 +260,14 @@ sub online {
 	$pid = open3($i, $o, $e, "ping -c2 -n -q 8.8.8.8");
 	waitpid($pid, 0);
 	$code = $? >> 8;
-	return ($code != 0) ? 0 : 1;
+	return ($code == 0);
 }
 
 # Determines if the child process is still running
 sub child_alive {
 	my $pid = $mplayer->{pid};
 	my $res = waitpid($pid, WNOHANG);
-	return ($res < 0) ? 0 : 1;
+	return ($res >= 0);
 }
 
 # Runs a mplayer new process
