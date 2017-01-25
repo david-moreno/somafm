@@ -256,7 +256,10 @@ sub arguments {
 
 # We are online?
 sub online {
-	my $code = system("ping -c2 -n -q 8.8.8.8 &> /dev/null");
+	my ($i, $o, $e, $pid, $code);
+	$pid = open3($i, $o, $e, "ping -c2 -n -q 8.8.8.8");
+	waitpid($pid, 0);
+	$code = $? >> 8;
 	return ($code != 0) ? 0 : 1;
 }
 
