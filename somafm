@@ -72,7 +72,7 @@ sub help {
 	"  -u, --update    Downloads the station list\n".
 	"  -l, --list      Displays the available stations\n".
 	"  -h, --help      Shows this message\n".
-	"  -v, --version   Shows program version".
+	"  -v, --version   Shows program version\n".
 	"\nNot sure what to listen? Try 'random' as STATION\n";
 
 	print "$msg";
