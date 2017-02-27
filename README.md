@@ -18,6 +18,26 @@ On a Debian system you can:
     git clone https://github.com/david-moreno/somafm.git
     sudo cp somafm/somafm /usr/bin/
 
+Usage
+-----
+
+On a fresh install, you must update your station's list.
+You need to make this only once (or when a new station is created).
+
+    somafm --update
+
+Now, check the station list:
+
+    somafm --list
+
+When you have choosen a station, go listen it:
+
+    somafm your-favorite-station
+
+Not sure what to listen? Try **random**:
+
+    somafm random
+
 Support
 -------
 
