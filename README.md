@@ -41,4 +41,4 @@ Not sure what to listen? Try **random**:
 Support
 -------
 
-[Remember to support somafm!](http://somafm.com/)
+[Remember to support somafm!](https://somafm.com/support/)
