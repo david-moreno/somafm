@@ -37,7 +37,7 @@ use constant {
 	ERROR_GETLIST => 3,
 	ERROR_UNKNOWN => 4,
 
-	VERSION => "1.2"
+	VERSION => "1.2.1"
 };
 
 #---------------------------------------
@@ -65,6 +65,8 @@ our $mplayer = {
 	out => undef,
 	err => undef
 };
+
+our $current_title = "";
 
 sub help {
 	my $msg = "$program_name - Plays somafm stations using mplayer\n".
@@ -263,6 +265,22 @@ sub online {
 	return ($code == 0);
 }
 
+# Figlet checking
+sub figlet_installed {
+	my @tok = split(/ /, `whereis figlet`);
+	return (@tok > 1);
+}
+
+# Station's banner
+sub print_banner {
+	my $name = $stat->{name};
+	my $title = (figlet_installed()) ? "\n". `figlet \"  $name\"`: $name;
+	my $banner = "* Play: $title\n".
+	" $stat->{desc}".
+	"  Press 'CTRL+C' to exit\n\n";
+	print "$banner\n";
+}
+
 # Determines if the child process is still running
 sub child_alive {
 	my $pid = $mplayer->{pid};
@@ -289,7 +307,11 @@ sub print_title {
 			if (not $input) { return; }
 			if ($input =~ /^ICY/) {
 				my @tok = split("'", $input);
-				print "$tok[1]\n";
+				my $title = $tok[1];
+				if ($title ne $current_title) {
+					print "$title\n";
+					$current_title = $title;
+				}
 			}
 		}
 	}
@@ -322,17 +344,14 @@ if (not $stat->{pls}) {
 	exit(ERROR_UNKNOWN);
 }
 
+print_banner();
+
 my $cmd = BIN ." -playlist $stat->{pls}";
 spawn($cmd);
 $SIG{'INT'} = \&sigint;
 $SIG{'QUIT'} = \&sigint;
 $SIG{'KILL'} = \&sigint;
 $| = 1;
-
-my $banner = "* Play: $stat->{name}\n".
-" $stat->{desc}".
-"  Press 'CTRL+C' to exit\n\n";
-print "$banner";
 
 while (1) {
 	if (not child_alive()) {
